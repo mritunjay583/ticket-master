@@ -19,11 +19,28 @@ services:
       timeout: 3s
       retries: 10
 
+  # One-shot migration service: applies migrations (and seeds in local/dev), then exits.
+  # This mirrors the production pattern of a dedicated migration step (init-container / Job /
+  # pipeline stage) instead of migrating inside the app's serve-startup — so migrations run
+  # exactly once, not once per API replica.
+  migrate:
+    build: .
+    command: ["sh", "scripts/migrate.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://ticketmaster:ticketmaster@db:5432/ticketmaster}
+
   api:
     build: .
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       ENVIRONMENT: ${ENVIRONMENT:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}

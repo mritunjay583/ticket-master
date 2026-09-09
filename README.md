@@ -22,6 +22,15 @@ Python 3.12 · FastAPI · PostgreSQL · SQLAlchemy 2.0 · Alembic · Redis + RQ 
 docker compose up --build
 ```
 
+Startup is orchestrated automatically: `db` becomes healthy → a one-shot `migrate` service applies
+migrations (`alembic upgrade head`) and seeds sample data in local/dev → then the `api` starts (it
+waits for `migrate` to complete successfully). So a single command gives you a fully migrated,
+seeded, running API.
+
+> In production, migrations would run as a dedicated pre-deploy step (init-container / Job / pipeline
+> stage) rather than per-replica app startup. The `migrate` service mirrors that pattern locally.
+> See `docs/LEARNING_MIGRATIONS_IN_PRODUCTION.md`.
+
 Then:
 
 ```bash
