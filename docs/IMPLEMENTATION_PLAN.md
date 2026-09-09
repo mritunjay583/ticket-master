@@ -98,20 +98,24 @@ reports DB reachable. Envelope + error handler verified with a deliberate bad ro
 **Goal:** all required ticket endpoints work with correct validation and status codes.
 Built as four vertical slices.
 
-- [ ] **Slice 2a — Create Ticket** `POST /api/v1/tickets`
+- [x] **Slice 2a — Create Ticket** `POST /api/v1/tickets`
       - `CreateTicketRequest` DTO (email, enums, length bounds) → `TicketRepository.create` →
         `TicketService.create_ticket` (writes `CREATED` event) → `201` + `TicketResponse`.
-- [ ] **Slice 2b — Retrieve** `GET /api/v1/tickets/{id}` → `200` or `404` (envelope).
-- [ ] **Slice 2c — List** `GET /api/v1/tickets`
+- [x] **Slice 2b — Retrieve** `GET /api/v1/tickets/{id}` → `200` or `404` (envelope).
+- [x] **Slice 2c — List** `GET /api/v1/tickets`
       - pagination (`page`, `page_size`) + filters (status/priority/category) → `200` with
         `meta { page, page_size, total }`.
-- [ ] **Slice 2d — Update Status** `PATCH /api/v1/tickets/{id}/status`
+- [x] **Slice 2d — Update Status** `PATCH /api/v1/tickets/{id}/status`
       - `services/state_machine.py` transition table → invalid transition → `409` →
         writes `STATUS_CHANGED` event.
-- [ ] **Events read (supports history req.)** `GET /api/v1/tickets/{id}/events` → `200`.
+- [x] **Events read (supports history req.)** `GET /api/v1/tickets/{id}/events` → `200`.
+- [x] SQLAlchemy repository adapters (`SqlAlchemyTicketRepository`, `SqlAlchemyEventRepository`)
+      wired through the container; DTOs separate from ORM models.
+- [x] Tests: 14 state-machine unit tests + 7 API integration tests (fresh test-DB schema).
 
-**✅ Review gate 2:** every endpoint exercised in Swagger; valid + invalid inputs return correct
-codes/envelope; invalid transition returns `409`; events recorded for create + status change.
+**✅ Review gate 2 — PASSED:** all endpoints verified end-to-end (create 201, get 200/404,
+list 200 with filter+meta, valid transition 200, invalid transition 409, events recorded,
+invalid email 422). ruff + mypy clean; 26 tests pass.
 
 ---
 

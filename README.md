@@ -10,11 +10,24 @@ Python 3.12 · FastAPI · PostgreSQL · SQLAlchemy 2.0 · Alembic · Redis + RQ 
 ## Status
 
 - **Phase 0 — Foundation & walking skeleton:** ✅ done
-  (config, structured logging, response envelope, typed errors, DB layer, ports + DI container,
-  app factory with lifespan, request-id middleware, `/health`, Docker Compose with api + postgres)
-- Phase 1 — Data model & migrations: pending
-- Phase 2 — Ticket core API: pending
+- **Phase 1 — Data model & migrations:** ✅ done (4 tables, native enums, Alembic, seed)
+- **Phase 2 — Ticket core API:** ✅ done
+  (create / retrieve / list+filter+paginate / update-status with state machine / events;
+  repository adapters, DTOs, service layer; 26 tests)
 - Phase 3 — Async processing: pending
+
+## API endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/v1/tickets` | Create a ticket (201) |
+| `GET` | `/api/v1/tickets/{id}` | Retrieve by ID (200 / 404) |
+| `GET` | `/api/v1/tickets` | List — `?status=&priority=&category=&page=&page_size=` |
+| `PATCH` | `/api/v1/tickets/{id}/status` | Update status via state machine (200 / 409) |
+| `GET` | `/api/v1/tickets/{id}/events` | Ticket audit history |
+| `GET` | `/health` | Liveness/readiness |
+
+Full interactive docs at `/docs` (Swagger).
 
 ## Run locally (Docker)
 

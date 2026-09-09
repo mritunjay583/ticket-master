@@ -15,6 +15,7 @@ from fastapi import FastAPI
 
 from app.api.health import router as health_router
 from app.api.middleware import RequestIDMiddleware
+from app.api.v1.tickets import router as tickets_router
 from app.core.config import Settings, get_settings
 from app.core.container import build_container
 from app.core.db import check_database, dispose_engine, init_engine
@@ -58,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(health_router)
+    app.include_router(tickets_router)
     return app
 
 

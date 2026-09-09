@@ -1,11 +1,7 @@
 """Composition root: the single place that wires concrete adapters to ports.
 
 Everything technology-specific is assembled here. Routers/services receive dependencies from
-this container (via FastAPI ``Depends``), so swapping a backend is a change confined to this file
-plus the new adapter module.
-
-In Phase 0 the container only carries settings; repository/queue adapters are registered in
-Phases 2 and 3 respectively.
+this container, so swapping a backend is a change confined to this file plus the new adapter module.
 """
 
 from __future__ import annotations
@@ -13,6 +9,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.core.config import Settings, get_settings
+from app.core.ports.event_repository import TicketEventRepository
+from app.core.ports.ticket_repository import TicketRepository
+from app.repositories.sqlalchemy_event_repository import SqlAlchemyEventRepository
+from app.repositories.sqlalchemy_ticket_repository import SqlAlchemyTicketRepository
+from app.services.ticket_service import TicketService
 
 
 @dataclass(frozen=True)
@@ -20,16 +21,28 @@ class Container:
     """Holds fully-wired application dependencies."""
 
     settings: Settings
+    ticket_repository: TicketRepository
+    event_repository: TicketEventRepository
+    ticket_service: TicketService
 
 
 _container: Container | None = None
 
 
 def build_container(settings: Settings | None = None) -> Container:
-    """Create (once) and return the application container."""
+    """Create (once) and return the container — the only place concrete tech is chosen."""
     global _container
     if _container is None:
-        _container = Container(settings=settings or get_settings())
+        settings = settings or get_settings()
+        ticket_repository: TicketRepository = SqlAlchemyTicketRepository()
+        event_repository: TicketEventRepository = SqlAlchemyEventRepository()
+        ticket_service = TicketService(ticket_repository, event_repository)
+        _container = Container(
+            settings=settings,
+            ticket_repository=ticket_repository,
+            event_repository=event_repository,
+            ticket_service=ticket_service,
+        )
     return _container
 
 
