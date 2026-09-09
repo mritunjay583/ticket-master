@@ -1,0 +1,36 @@
+# Values use ${VAR:-default} substitution: Docker Compose reads them from a local .env file if
+# present, otherwise falls back to the local-dev default shown. The defaults are throwaway
+# LOCAL credentials for a disposable container — NEVER production secrets. Production values come
+# from the platform's secret manager, never from this file.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ticketmaster}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ticketmaster}
+      POSTGRES_DB: ${POSTGRES_DB:-ticketmaster}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ticketmaster} -d ${POSTGRES_DB:-ticketmaster}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://ticketmaster:ticketmaster@db:5432/ticketmaster}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+volumes:
+  pgdata:
