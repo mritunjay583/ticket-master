@@ -54,3 +54,6 @@ desktop.ini
 pgdata/
 postgres-data/
 redis-data/
+
+# ---- Scratch/verification files (temporary) ----
+_*.txt

@@ -314,3 +314,61 @@ the composition root, not multiple containers. (DI frameworks like `dependency-i
 
 **One-liner:** *Exactly one container — the composition root — wires every port's chosen adapter in a
 single place; ports and adapters are many, the container is one.*
+
+---
+
+## 13. Naming conventions for ports (the suffix announces the role)
+
+Port names are **not arbitrary** — they use established design-pattern vocabulary. The suffix tells
+a reader what *kind* of boundary it is, without opening the file.
+
+### "Repository" — what it means
+A **Repository** (Martin Fowler / Domain-Driven Design) is:
+> an object that acts like a **collection of domain entities**, hiding how they're actually stored.
+
+Mental image: pretend all tickets live in an in-memory list; the repository is the object you ask to
+add/find/update items. You call `ticket_repo.get_by_id(5)` and don't know or care whether it hits
+Postgres, Mongo, or a dict. The word literally means *a place where things are stored* — that's its
+job: the storage boundary for one entity type.
+
+- `TicketRepository` → stores/retrieves `Ticket`s
+- `TicketEventRepository` (file `event_repository.py`) → stores/retrieves `TicketEvent`s (audit rows)
+
+Formula: **`<Entity>Repository`**, one per entity/aggregate. File = snake_case
+(`event_repository.py`), class = PascalCase (`TicketEventRepository`).
+
+### Common port suffixes and what they signal
+| Suffix | Role / pattern | Example |
+|--------|----------------|---------|
+| `...Repository` | data storage/retrieval for an entity | `TicketRepository`, `TicketEventRepository` |
+| `...Queue` | push work onto it for later processing | `TaskQueue` |
+| `...Provider` | supplies/produces a value or capability | `SummaryProvider` |
+| `...Service` | orchestrates business logic (a use-case) | `TicketService` |
+| `...Gateway` / `...Client` | talks to an external system/API | `PaymentGateway`, `EmailClient` |
+| `...Sender` / `...Notifier` | sends messages out | `EmailSender` |
+| `...Factory` | creates other objects | `create_task_queue` |
+
+So the ports in this project read as:
+- `ticket_repository.py` → **Repository** (ticket storage)
+- `event_repository.py` → **Repository** (audit-event storage)
+- `task_queue.py` → **Queue** (push jobs)
+- `summary_provider.py` → **Provider** (produce a summary)
+
+### The golden rule: name the capability, not the technology
+> Name a port after the **role/capability** it provides using standard pattern vocabulary — never
+> after the tech behind it.
+
+- ✅ `TicketRepository`, `TaskQueue`  — tech-agnostic
+- ❌ `PostgresTicketStore`, `RedisQueue` — leaks the tech into the abstraction
+
+The **tech name belongs on the adapter**, not the port:
+```
+Port (what):      TicketRepository            TaskQueue
+Adapter (how):    SqlAlchemyTicketRepository   RQTaskQueue / SqsTaskQueue
+```
+Ports describe *what* is needed; adapter names reveal *how* it's done. If you ever see a technology
+name in a port, that's a design smell — the abstraction is leaking.
+
+**One-liner:** *"Repository" = the pattern for an object that stores/retrieves an entity while hiding
+storage; port names use role suffixes (`Repository`/`Queue`/`Provider`/…) and stay tech-agnostic, with
+the technology named only on the adapter.*

@@ -19,8 +19,11 @@ RUN pip install --upgrade pip uv
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
-# Copy application source.
+# Copy application source, migrations, and scripts.
 COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
+COPY scripts ./scripts
 
 EXPOSE 8000
 

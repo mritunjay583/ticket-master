@@ -272,13 +272,24 @@ exist (avoids a read-before-write race).
 > use RQ instead of a streaming log to stay one-command-local, and add prioritize/spam/route steps
 > the brief lists.
 
-Runs in the worker, each step idempotent and persisted:
+Runs in the worker, each step idempotent and persisted. The **full computed output is written to
+`processing_results`** (this is "the processing result stored in the database" the brief asks for).
+Two of those computed values are *also applied to the live ticket*, because the brief frames them as
+actions on the ticket ("assign ticket priority", "route to the correct department"):
 
-1. **Summarize** — deterministic summary from subject + description → `processing_results.summary`.
-2. **Prioritize** — keyword/heuristic scoring → may update `ticket.priority`.
-3. **Spam detection** — heuristic flag → `processing_results.is_spam` (spam ⇒ route to `TRIAGE`).
-4. **Route** — category → department mapping → `ticket.department`.
-5. Persist a `ticket_events` row (`PROCESSED`) with the outcome; set `processing_status = DONE`.
+| Step | Computes | Written to `processing_results` | Also applied to `ticket` |
+|------|----------|--------------------------------|--------------------------|
+| 1. Summarize | short summary of subject+description | `summary` | — (artifact, not a ticket attribute) |
+| 2. Prioritize | heuristic priority | `suggested_priority` | ✅ `ticket.priority` |
+| 3. Spam detect | spam verdict | `is_spam` | — (verdict; spam ⇒ routed to triage) |
+| 4. Route | category → department | `routed_department` | ✅ `ticket.department` |
+| 5. Record | — | — | append `ticket_events` (`PROCESSED`); set `processing_status = DONE` |
+
+**The suggested-vs-applied distinction:** `processing_results.suggested_priority` /
+`routed_department` are the immutable record of *what the worker decided*; `ticket.priority` /
+`ticket.department` are the *live, current* values an agent may later override. Keeping both lets us
+audit the automated decision and measure how often humans override it. `summary` and `is_spam` are
+processing artifacts, so they live **only** in `processing_results` (never bloat the ticket).
 
 Failure handling: exceptions mark `processing_status = FAILED` and record the error; RQ retry with
 backoff is configured, and a final failure is left inspectable (dead-letter behavior documented).

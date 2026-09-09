@@ -77,17 +77,19 @@ reports DB reachable. Envelope + error handler verified with a deliberate bad ro
 
 **Goal:** the relational schema exists, is migratable, and is seedable.
 
-- [ ] `schemas/enums.py` — `TicketStatus`, `TicketPriority`, `TicketCategory`, `Department`,
+- [x] `schemas/enums.py` — `TicketStatus`, `TicketPriority`, `TicketCategory`, `Department`,
       `ProcessingStatus`, `EventType`.
-- [ ] Models: `agent.py`, `ticket.py`, `ticket_event.py`, `processing_result.py`
+- [x] Models: `agent.py`, `ticket.py`, `ticket_event.py`, `processing_result.py`
       (FKs, `NOT NULL`, uniques, native PG enums, audit timestamps, `processing_status` column).
-- [ ] Indexes: `tickets(status)`, `(priority)`, `(category)`, `(created_at)`, composite
-      `(status, priority)`, `ticket_events(ticket_id, created_at)`.
-- [ ] Alembic setup + initial migration (creates enum types, tables, indexes, constraints).
-- [ ] `scripts/seed.py` — sample agents + tickets across statuses/priorities/categories.
+- [x] Indexes: `tickets(status)`, `(priority)`, `(category)`, `(created_at)`, composite
+      `(status, priority)`, `(processing_status)`, `ticket_events(ticket_id, created_at)`.
+- [x] Alembic setup + initial migration (creates enum types, tables, indexes, constraints;
+      enums managed explicitly for a clean upgrade/downgrade roundtrip).
+- [x] `scripts/seed.py` — sample agents + tickets across statuses/priorities/categories (idempotent).
+- [x] Tightened repository ports from `Any` placeholders to concrete types (`Ticket`, `TicketFilter`).
 
-**✅ Review gate 1:** `alembic upgrade head` runs clean on a fresh DB; `seed.py` populates; schema
-matches `ARCHITECTURE.md` §4. Down-migration works.
+**✅ Review gate 1 — PASSED:** on a fresh DB, `alembic upgrade head` runs clean; `seed.py` populates
+(4 agents, 4 tickets); schema matches `ARCHITECTURE.md` §4; upgrade→downgrade→upgrade roundtrip works.
 
 ---
 

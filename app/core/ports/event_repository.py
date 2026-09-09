@@ -1,18 +1,19 @@
-"""Port: ticket event/history persistence (append-only audit trail).
-
-Note: signatures use ``Any`` placeholders in Phase 0 and are tightened to concrete domain types
-in Phase 1 when the event entity exists.
-"""
+"""Port: ticket event/history persistence (append-only audit trail)."""
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
+from uuid import UUID
+
+from sqlalchemy.orm import Session
+
+from app.models.ticket_event import TicketEvent
 
 
 @runtime_checkable
 class TicketEventRepository(Protocol):
     """Data-access contract for the immutable ticket-event log."""
 
-    def add(self, session: Any, event: Any) -> Any: ...
+    def add(self, session: Session, event: TicketEvent) -> TicketEvent: ...
 
-    def list_for_ticket(self, session: Any, ticket_id: Any) -> list[Any]: ...
+    def list_for_ticket(self, session: Session, ticket_id: UUID) -> list[TicketEvent]: ...

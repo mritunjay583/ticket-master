@@ -29,7 +29,7 @@ def build_container(settings: Settings | None = None) -> Container:
     """Create (once) and return the application container."""
     global _container
     if _container is None:
-        _container = Container(settings=settingsContainer or get_settings())
+        _container = Container(settings=settings or get_settings())
     return _container
 
 
