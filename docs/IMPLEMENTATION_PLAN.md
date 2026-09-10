@@ -123,16 +123,19 @@ invalid email 422). ruff + mypy clean; 26 tests pass.
 
 **Goal:** ticket creation triggers a background pipeline whose result is stored.
 
-- [ ] `core/queue.py` — `TaskQueue` protocol + `RQTaskQueue` implementation.
-- [ ] Enqueue **after commit** in `create_ticket`; ticket starts `processing_status = PENDING`.
-- [ ] `worker/worker.py` entrypoint + `worker/pipeline/` steps:
-      summarize → prioritize → spam-detect → route. Idempotent, keyed by `ticket_id`.
-- [ ] Persist to `processing_results`; update ticket (priority/department); write `PROCESSED` event;
-      set `processing_status = DONE` (or `FAILED` on error).
-- [ ] Add **redis + worker** services to Compose.
+- [x] `TaskQueue` port + `RQTaskQueue` adapter (`app/adapters/queue/`).
+- [x] Enqueue **after commit** in `create_ticket`; ticket starts `processing_status = PENDING`.
+      Enqueue failure does not fail creation (ticket stays PENDING for the Phase 4 sweeper).
+- [x] `worker/worker.py` entrypoint + `worker/pipeline/` steps:
+      summarize → spam-detect → prioritize → route. Idempotent, keyed by `ticket_id`.
+- [x] Persist to `processing_results`; apply priority/department to ticket; write `PROCESSED` event;
+      set `processing_status = DONE` (or `FAILED` + `PROCESSING_FAILED` event on error).
+- [x] Add **redis + worker** services to Compose (worker reuses the api image, different command).
 
-**✅ Review gate 3:** create a ticket → worker consumes → `processing_results` row created,
-`processing_status = DONE`, `PROCESSED` event logged. Failure path sets `FAILED` and records error.
+**✅ Review gate 3 — PASSED:** verified end-to-end in Docker. Create ticket → API returns 201 →
+worker consumes via Redis → `processing_results` populated, `processing_status = DONE`, priority
+bumped (MEDIUM→HIGH on "error"), department routed (TECHNICAL→ENGINEERING), `PROCESSED` event logged.
+Spam ticket → priority LOW, department TRIAGE. Idempotent re-run confirmed. 41 tests pass.
 
 ---
 

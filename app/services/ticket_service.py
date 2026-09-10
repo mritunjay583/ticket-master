@@ -11,13 +11,18 @@ from uuid import UUID
 
 from app.core.db import session_scope
 from app.core.errors import NotFoundError
+from app.core.logging import get_logger
 from app.core.ports.event_repository import TicketEventRepository
+from app.core.ports.task_queue import TaskQueue
 from app.core.ports.ticket_repository import TicketFilter, TicketRepository
 from app.models.ticket import Ticket
 from app.models.ticket_event import TicketEvent
 from app.schemas.enums import EventType, TicketStatus
 from app.schemas.ticket import CreateTicketRequest
 from app.services.state_machine import validate_transition
+from app.worker.tasks import process_ticket
+
+logger = get_logger(__name__)
 
 
 class TicketService:
@@ -27,12 +32,15 @@ class TicketService:
         self,
         ticket_repository: TicketRepository,
         event_repository: TicketEventRepository,
+        task_queue: TaskQueue,
     ) -> None:
         self._tickets = ticket_repository
         self._events = event_repository
+        self._queue = task_queue
 
     def create_ticket(self, payload: CreateTicketRequest) -> Ticket:
-        """Create a ticket (status OPEN) and record a CREATED event, atomically."""
+        """Create a ticket (status OPEN, processing PENDING), record a CREATED event, then enqueue
+        async processing AFTER the transaction commits."""
         with session_scope() as session:
             ticket = Ticket(
                 customer_name=payload.customer_name,
@@ -57,7 +65,18 @@ class TicketService:
             session.flush()
             session.refresh(ticket)
             session.expunge(ticket)
-            return ticket
+
+        # Enqueue AFTER the commit: a worker must never see a ticket that isn't persisted yet.
+        # A failure to enqueue must not fail the (already-successful) creation — the ticket stays
+        # PENDING and can be picked up by the Phase 4 sweeper.
+        try:
+            self._queue.enqueue(process_ticket, str(ticket.id))
+        except Exception:  # noqa: BLE001
+            logger.exception(
+                "failed to enqueue processing job", extra={"ticket_id": str(ticket.id)}
+            )
+
+        return ticket
 
     def get_ticket(self, ticket_id: UUID) -> Ticket:
         """Return a ticket or raise NotFoundError (404)."""

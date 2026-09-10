@@ -7,7 +7,9 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     # uv: install into the system environment, no per-project venv inside the image
     UV_SYSTEM_PYTHON=1 \
-    UV_PROJECT_ENVIRONMENT=/usr/local
+    UV_PROJECT_ENVIRONMENT=/usr/local \
+    # Be resilient to slow/flaky networks when pulling wheels.
+    UV_HTTP_TIMEOUT=180
 
 WORKDIR /app
 

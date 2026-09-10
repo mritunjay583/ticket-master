@@ -13,8 +13,11 @@ Python 3.12 · FastAPI · PostgreSQL · SQLAlchemy 2.0 · Alembic · Redis + RQ 
 - **Phase 1 — Data model & migrations:** ✅ done (4 tables, native enums, Alembic, seed)
 - **Phase 2 — Ticket core API:** ✅ done
   (create / retrieve / list+filter+paginate / update-status with state machine / events;
-  repository adapters, DTOs, service layer; 26 tests)
-- Phase 3 — Async processing: pending
+  repository adapters, DTOs, service layer)
+- **Phase 3 — Async processing:** ✅ done
+  (Redis + RQ; on create, enqueue-after-commit → worker pipeline: summarize → spam → prioritize →
+  route → persist `ProcessingResult`, apply priority/department, `processing_status=DONE`; 41 tests)
+- Phase 4 — Reliability hardening: pending
 
 ## API endpoints
 

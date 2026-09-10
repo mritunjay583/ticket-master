@@ -38,9 +38,23 @@ requires_db = pytest.mark.skipif(
 )
 
 
+class FakeTaskQueue:
+    """In-memory TaskQueue for tests — records enqueued jobs instead of hitting Redis.
+
+    Demonstrates the ports payoff: the service is tested with a fake adapter, no Redis needed.
+    """
+
+    def __init__(self) -> None:
+        self.enqueued: list[tuple[object, tuple[object, ...]]] = []
+
+    def enqueue(self, func: object, *args: object, **kwargs: object) -> str:
+        self.enqueued.append((func, args))
+        return "fake-job-id"
+
+
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    """A FastAPI TestClient wired to the test database with a fresh schema."""
+    """A FastAPI TestClient wired to the test database (fresh schema) with a fake task queue."""
     os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
     # Reset cached singletons so the app picks up TEST_DATABASE_URL.
@@ -61,11 +75,21 @@ def client() -> Iterator[TestClient]:
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
+    # Build the container, then swap the queue adapter for the in-memory fake (no Redis in tests).
+    from app.core.container import build_container
+    from app.services.ticket_service import TicketService
+
+    c = build_container(settings)
+    fake_queue = FakeTaskQueue()
+    service = TicketService(c.ticket_repository, c.event_repository, fake_queue)
+    object.__setattr__(c, "task_queue", fake_queue)
+    object.__setattr__(c, "ticket_service", service)
+
     from app.main import create_app
 
     app = create_app(settings)
-    with TestClient(app) as c:
-        yield c
+    with TestClient(app) as test_client:
+        yield test_client
 
     Base.metadata.drop_all(engine)
     db.dispose_engine()

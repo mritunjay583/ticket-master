@@ -19,12 +19,22 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   # One-shot migration service: applies migrations (and seeds in local/dev), then exits.
   # This mirrors the production pattern of a dedicated migration step (init-container / Job /
   # pipeline stage) instead of migrating inside the app's serve-startup — so migrations run
   # exactly once, not once per API replica.
   migrate:
-    build: .
+    image: ticket-master-api
     command: ["sh", "scripts/migrate.sh"]
     depends_on:
       db:
@@ -39,6 +49,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
     environment:
@@ -48,6 +60,24 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
     ports:
       - "${API_PORT:-8000}:8000"
+
+  # Background worker: separate process, SAME image as the API, different command. Consumes jobs
+  # from Redis and runs the ticket-processing pipeline. Scales independently of the API.
+  worker:
+    image: ticket-master-api
+    command: ["python", "-m", "app.worker.worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://ticketmaster:ticketmaster@db:5432/ticketmaster}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
 
 volumes:
   pgdata:
