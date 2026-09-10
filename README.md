@@ -16,8 +16,11 @@ Python 3.12 · FastAPI · PostgreSQL · SQLAlchemy 2.0 · Alembic · Redis + RQ 
   repository adapters, DTOs, service layer)
 - **Phase 3 — Async processing:** ✅ done
   (Redis + RQ; on create, enqueue-after-commit → worker pipeline: summarize → spam → prioritize →
-  route → persist `ProcessingResult`, apply priority/department, `processing_status=DONE`; 41 tests)
-- Phase 4 — Reliability hardening: pending
+  route → persist `ProcessingResult`, apply priority/department, `processing_status=DONE`)
+- **Phase 4 — Reliability hardening:** ✅ done
+  (at-least-once: Redis AOF, RQ retries/backoff + failed registry, PENDING **sweeper**, idempotent
+  jobs; verified by flushing Redis and confirming full recovery; 43 tests)
+- Phase 5 — Polish & deliverables: pending
 
 ## API endpoints
 

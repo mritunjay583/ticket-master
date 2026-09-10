@@ -21,8 +21,13 @@ services:
 
   redis:
     image: redis:7-alpine
+    # AOF persistence (append-only file): on restart Redis replays its log instead of losing all
+    # queued jobs — shrinks the "Redis crashed" data-loss window from everything to ~1 second.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
     ports:
       - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -78,6 +83,10 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://ticketmaster:ticketmaster@db:5432/ticketmaster}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JOB_MAX_RETRIES: ${JOB_MAX_RETRIES:-3}
+      SWEEPER_INTERVAL_SECONDS: ${SWEEPER_INTERVAL_SECONDS:-60}
+      SWEEPER_STALE_AFTER_SECONDS: ${SWEEPER_STALE_AFTER_SECONDS:-120}
 
 volumes:
   pgdata:
+  redisdata:

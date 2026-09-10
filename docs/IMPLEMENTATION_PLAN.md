@@ -143,14 +143,17 @@ Spam ticket → priority LOW, department TRIAGE. Idempotent re-run confirmed. 41
 
 **Goal:** no task lost on Redis/worker/API crash — at-least-once guarantee.
 
-- [ ] Redis **AOF** persistence (`appendfsync everysec`) in Compose.
-- [ ] RQ **retries with backoff** + **failed-job registry** (dead-letter equivalent).
-- [ ] **Sweeper** job: re-enqueue tickets stuck in `PENDING` older than threshold.
-- [ ] Confirm job **idempotency** (re-run safe via `processing_status` guard).
-- [ ] Document the **Transactional Outbox** as the production-grade evolution.
+- [x] Redis **AOF** persistence (`--appendonly yes --appendfsync everysec`) + volume in Compose.
+- [x] RQ **retries with backoff** (`Retry(max, interval=[10,30,60])`) + failed-job registry.
+- [x] **Sweeper** (`app/worker/sweeper.py`): re-enqueues tickets stuck in `PENDING` past a
+      threshold; scheduled as a self-rescheduling recurring RQ job.
+- [x] Confirmed job **idempotency** (DONE guard + upsert) — re-run safe.
+- [x] Documented the **Transactional Outbox** + a standalone-loop sweeper alternative
+      (`LEARNING_PHASE4_RELIABILITY.md`).
 
-**✅ Review gate 4:** kill Redis (or worker) mid-flight, restart → stuck `PENDING` ticket is
-re-processed exactly once; no duplicate `processing_results`.
+**✅ Review gate 4 — PASSED:** created a ticket (PENDING), **flushed Redis** to simulate a fully
+lost job, started the worker → sweeper logged `re-enqueued stuck tickets` → all recovered to
+`DONE`, exactly once (no duplicate results). Self-rescheduling sweeper cadence verified. 43 tests pass.
 
 ---
 

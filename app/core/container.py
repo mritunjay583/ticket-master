@@ -39,7 +39,9 @@ def build_container(settings: Settings | None = None) -> Container:
         settings = settings or get_settings()
         ticket_repository: TicketRepository = SqlAlchemyTicketRepository()
         event_repository: TicketEventRepository = SqlAlchemyEventRepository()
-        task_queue: TaskQueue = RQTaskQueue(settings.redis_url, settings.queue_name)
+        task_queue: TaskQueue = RQTaskQueue(
+            settings.redis_url, settings.queue_name, settings.job_max_retries
+        )
         ticket_service = TicketService(ticket_repository, event_repository, task_queue)
         _container = Container(
             settings=settings,

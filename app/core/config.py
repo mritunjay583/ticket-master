@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     queue_backend: Literal["rq", "sqs"] = "rq"
     queue_name: str = "tickets"
 
+    # --- Reliability (Phase 4) ---
+    job_max_retries: int = 3  # RQ retries for transient failures (with backoff)
+    sweeper_interval_seconds: int = 60  # how often the sweeper scans for stuck PENDING tickets
+    sweeper_stale_after_seconds: int = 120  # a PENDING ticket older than this is re-enqueued
+    sweeper_batch_size: int = 100  # max stuck tickets re-enqueued per sweep
+
     @property
     def is_local(self) -> bool:
         return self.environment == "local"
