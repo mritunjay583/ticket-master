@@ -39,6 +39,7 @@ services:
   # pipeline stage) instead of migrating inside the app's serve-startup — so migrations run
   # exactly once, not once per API replica.
   migrate:
+    build: .
     image: ticket-master-api
     command: ["sh", "scripts/migrate.sh"]
     depends_on:
@@ -51,6 +52,7 @@ services:
 
   api:
     build: .
+    image: ticket-master-api
     depends_on:
       db:
         condition: service_healthy
@@ -69,6 +71,7 @@ services:
   # Background worker: separate process, SAME image as the API, different command. Consumes jobs
   # from Redis and runs the ticket-processing pipeline. Scales independently of the API.
   worker:
+    build: .
     image: ticket-master-api
     command: ["python", "-m", "app.worker.worker"]
     depends_on:
