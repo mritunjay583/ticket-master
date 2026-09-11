@@ -50,8 +50,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(
         title="Ticket-Master API",
         version="0.1.0",
-        description="Support Ticket Management System with asynchronous ticket processing.",
+        description=(
+            "Support Ticket Management System with asynchronous ticket processing.\n\n"
+            "- Customers create tickets; agents update status through a controlled state machine.\n"
+            "- On creation, a background worker asynchronously summarizes, spam-checks, "
+            "prioritizes, and routes the ticket, storing the result.\n"
+            "- All responses share a standard envelope: "
+            "`{ success, message, data, error, meta }`."
+        ),
         lifespan=lifespan,
+        openapi_tags=[
+            {
+                "name": "tickets",
+                "description": "Create, retrieve, list, and update support tickets.",
+            },
+            {"name": "health", "description": "Liveness/readiness probe (checks the database)."},
+        ],
     )
     app.state.settings = settings
 

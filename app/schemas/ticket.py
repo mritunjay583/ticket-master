@@ -23,6 +23,19 @@ from app.schemas.enums import (
 class CreateTicketRequest(BaseModel):
     """Payload a customer submits to open a ticket."""
 
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "customer_name": "Jane Doe",
+                "customer_email": "jane@example.com",
+                "subject": "Cannot log in to the app",
+                "description": "I get an error every time I try to log in since this morning.",
+                "priority": "HIGH",
+                "category": "TECHNICAL",
+            }
+        }
+    )
+
     customer_name: str = Field(min_length=1, max_length=128)
     customer_email: EmailStr
     subject: str = Field(min_length=1, max_length=256)
@@ -33,6 +46,10 @@ class CreateTicketRequest(BaseModel):
 
 class UpdateStatusRequest(BaseModel):
     """Payload an agent submits to change a ticket's status."""
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"status": "IN_PROGRESS", "actor": "agent@example.com"}}
+    )
 
     status: TicketStatus
     actor: str | None = Field(

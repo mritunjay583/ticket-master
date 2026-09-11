@@ -161,15 +161,17 @@ lost job, started the worker → sweeper logged `re-enqueued stuck tickets` → 
 
 **Goal:** clean, documented, one-command deliverable.
 
-- [ ] OpenAPI/Swagger: tags, summaries, examples; served at `/docs`.
-- [ ] `README.md`: overview, architecture summary, setup, env vars, run-locally,
-      API docs access, tradeoffs & assumptions.
-- [ ] `.env.example` with all env vars.
-- [ ] Final test pass; `ruff` + `mypy` clean; remove dead code/temp files.
-- [ ] Fresh-clone smoke test: single `docker compose up` → fully working.
+- [x] OpenAPI/Swagger: grouped tags, summaries, request examples; served at `/docs` `/redoc`.
+- [x] `README.md`: overview, architecture decisions, setup, env vars, run-locally,
+      API docs access, tradeoffs & assumptions, structure, dev workflow.
+- [x] `.env.example` with all env vars.
+- [x] Docs reorganized: `LEARNING_*` moved to `docs/learning/` (design docs stay top-level).
+- [x] Final pass: `ruff` + `mypy` clean; 43 tests pass; temp files removed.
+- [x] Fresh-clone smoke test (`docker compose down -v` → `up --build`).
 
-**✅ Review gate 5:** fresh clone → one command → create/list/get/update-status + async result all
-work; docs complete.
+**✅ Review gate 5 — PASSED:** from a clean volume, one `docker compose up --build` →
+health 200, Swagger/openapi 200, seed loaded (4 tickets), create → async worker processed to
+DONE (priority HIGH, dept ENGINEERING). README complete; all checks green.
 
 ---
 
