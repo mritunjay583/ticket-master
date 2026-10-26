@@ -73,9 +73,11 @@ class JsonFormatter(logging.Formatter):
 
 
 # Standard LogRecord attributes we do not want to duplicate into the JSON payload.
-_RESERVED_ATTRS = frozenset(
-    logging.LogRecord("", 0, "", 0, "", None, None).__dict__.keys()
-) | {"message", "asctime", "taskName"}
+_RESERVED_ATTRS = frozenset(logging.LogRecord("", 0, "", 0, "", None, None).__dict__.keys()) | {
+    "message",
+    "asctime",
+    "taskName",
+}
 
 
 def configure_logging(level: str = "INFO") -> None:
